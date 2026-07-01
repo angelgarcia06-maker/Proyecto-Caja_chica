@@ -65,14 +65,15 @@ public class NotificacionService {
     @Transactional
     public void notificarPresupuestoAlerta(PresupuestoArea presupuesto) {
         if (presupuesto.getDepartamento() == null) return;
-        List<Usuario> usuariosDepto = usuarioRepository.findByDepartamentoNombreIgnoreCase(
-            presupuesto.getDepartamento().getNombre());
-        for (Usuario u : usuariosDepto) {
+        List<Usuario> admins = usuarioRepository.findAll().stream()
+            .filter(u -> "ADMIN".equals(u.getRol()))
+            .toList();
+        BigDecimal disponible = presupuesto.getPresupuestoMensual().subtract(presupuesto.getConsumoActual());
+        String mensaje = "Presupuesto casi agotado en " + presupuesto.getDepartamento().getNombre() +
+                         " para " + presupuesto.getMes() + ". Disponible: S/. " + disponible;
+        for (Usuario u : admins) {
             Notificacion n = new Notificacion();
-            BigDecimal disponible = presupuesto.getPresupuestoMensual().subtract(presupuesto.getConsumoActual());
-            n.setMensaje("Presupuesto casi agotado en " + presupuesto.getDepartamento().getNombre() +
-                         " para " + presupuesto.getMes() +
-                         ". Disponible: S/. " + disponible);
+            n.setMensaje(mensaje);
             n.setTipo("PRESUPUESTO_ALERTA");
             n.setLeido(false);
             n.setFechaCreacion(LocalDateTime.now());
@@ -85,12 +86,14 @@ public class NotificacionService {
     @Transactional
     public void notificarSaldoBajo(CajaChica caja) {
         if (caja.getDepartamento() == null) return;
-        List<Usuario> usuariosDepto = usuarioRepository.findByDepartamentoNombreIgnoreCase(
-            caja.getDepartamento().getNombre());
-        for (Usuario u : usuariosDepto) {
+        List<Usuario> admins = usuarioRepository.findAll().stream()
+            .filter(u -> "ADMIN".equals(u.getRol()))
+            .toList();
+        String mensaje = "Saldo bajo en caja chica de " + caja.getDepartamento().getNombre() +
+                         ". Saldo actual: S/. " + caja.getSaldoActual();
+        for (Usuario u : admins) {
             Notificacion n = new Notificacion();
-            n.setMensaje("Saldo bajo en caja chica de " + caja.getDepartamento().getNombre() +
-                         ". Saldo actual: S/. " + caja.getSaldoActual());
+            n.setMensaje(mensaje);
             n.setTipo("SALDO_BAJO");
             n.setLeido(false);
             n.setFechaCreacion(LocalDateTime.now());
